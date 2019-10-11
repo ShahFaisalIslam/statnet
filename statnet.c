@@ -66,15 +66,14 @@ is completely executed*/
 	int success_old;//flag for success of obtaining initial bytes for a given iteration
 	int success_new;//flag for success of obtaining final bytes for the given iteration
 	int delay_arg;//counts arguments
-	delay_arg = 2;//first argument of a program is its filename, so we are reading the second argument
-			//which is command line's first argument
-
+	delay_arg = 2;/*first argument of a program is its filename, so we are reading the second argument
+			which is command line's first argument*/
 
 /*sets delay to either user input or to custom*/
 	if (argc == delay_arg)
 	{
 		delay.tv_sec = (int)atof(argv[1]);
-		delay.tv_usec=( ( int )atof( argv[1] )-delay.tv_sec )*( 1e6 );
+		delay.tv_usec=(int) (( atof(argv[1])-(double)delay.tv_sec  )*( 1000000 ));
 	}
 	else
 	{
@@ -82,6 +81,7 @@ is completely executed*/
 		delay.tv_usec = 0;
 	}
 first_delay = 1;
+int delaycheck;
 do
 {
 sigprocmask(SIG_BLOCK,&intmask,NULL);//this blocks the signal, so that the interruption does not mess with the program
@@ -90,11 +90,13 @@ sigprocmask(SIG_BLOCK,&intmask,NULL);//this blocks the signal, so that the inter
 	success_old = fileParser(datafilename,OLD);
 
 /*waiting for the amount of delay specified in the beginning*/
-	select(0,NULL,NULL,NULL,&delay);
+	delaycheck=select(0,NULL,NULL,NULL,&delay);
+	printf("%i",delaycheck);
 	if (argc == delay_arg)//required to reset the delay, as select function modifies its values to zero
 	{
 		delay.tv_sec = (int)atof(argv[1]);
-		delay.tv_usec=( ( int )atof( argv[1] )-delay.tv_sec )*( 1e6 );
+		delay.tv_usec=(int) (( atof(argv[1])-(double)delay.tv_sec  )*( 1000000 ));
+		printf("%lu\n%lu",delay.tv_sec,delay.tv_usec);
 	}
 	else
 	{
