@@ -24,12 +24,30 @@ extern double kbps_in;		//declared as such in order to append this data to the l
 extern double kbps_out;		//declared as such in order to append this data to the log file
 
 //functions:
-double kb_per_second(const unsigned long old_bytes,const unsigned long new_bytes,struct timeval *beginning,struct timeval*ending);
-char *setfilename(char *interface_name,const int type);
-void free_memory(unsigned long *in,unsigned long *out,FILE *fp);
-void free_memory2(char **a,unsigned long *b,unsigned long *c,unsigned long *d,unsigned long *e);
-int fileParser(const char *file,const int set);
-void interrupt_detector(int signum);
-void save_bandwidth(const int i,const int type);
-void append_log(const int i);
+
+/*calculates bandwidth in kbps*/
+double Bandwidth(const unsigned long old_bytes,const unsigned long new_bytes,struct timeval *beginning,struct timeval*ending);
+
+/*Sets filename for storing bandwidth*/
+char *SetFileName(char *interface_name,const int type);
+
+/*frees memory inside fileParser function*/
+void FreeMemory(unsigned long *in,unsigned long *out,FILE *fp);
+
+/*frees memory in the main program*/
+void FreeMemory2(char **a,unsigned long *b,unsigned long *c,unsigned long *d,unsigned long *e);
+
+/*parses file to fetch bytes in/out*/
+int FileParser(const char *file,const int set);
+
+/*saves bandwidths in files at /tmp/ */
+void SaveBandwidth(const int i,const int type);
+
+/*saves bandwidths permanently in a log file*/
+void AppendLog(const int i);
+
+/*handles interrupt given by the user. Ensures that memory is freeed before program exits*/
+void InterruptHandler(int signum);
+
+
 #endif

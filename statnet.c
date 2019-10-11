@@ -43,9 +43,9 @@ int first_delay;//this will keep file parsing different for the first time
 double kbps_in;//just declaring here
 double kbps_out;//just declaring here
 
-
 int main(int argc,char *argv[])
 {
+
 /*setting up interrupt signal's mask. This will prevent the signal from stopping the program until the loop
 is completely executed*/
 	sigset_t intmask;//interrupt's mask
@@ -54,7 +54,7 @@ is completely executed*/
 
 
 /*variables declaration*/
-	double kbps;//variable that stores bandwidth calculated by kb_per_second function
+	double kbps;//variable that stores bandwidth calculated by Bandwidth function
 
 	char *infilename;//variable for storing filename for file that stores incoming bandwidth
 	char *outfilename;//variable for storing filename for file that stores outgoing bandwidth
@@ -81,22 +81,21 @@ is completely executed*/
 		delay.tv_usec = 0;
 	}
 first_delay = 1;
-int delaycheck;
+signal(SIGINT,InterruptHandler);//to make sure the memory is freed before the program exits
+
 do
 {
 sigprocmask(SIG_BLOCK,&intmask,NULL);//this blocks the signal, so that the interruption does not mess with the program
 
 /*file parsing to obtain initial bytes*/
-	success_old = fileParser(datafilename,OLD);
+	success_old = FileParser(datafilename,OLD);
 
 /*waiting for the amount of delay specified in the beginning*/
-	delaycheck=select(0,NULL,NULL,NULL,&delay);
-	printf("%i",delaycheck);
+	select(0,NULL,NULL,NULL,&delay);
 	if (argc == delay_arg)//required to reset the delay, as select function modifies its values to zero
 	{
 		delay.tv_sec = (int)atof(argv[1]);
 		delay.tv_usec=(int) (( atof(argv[1])-(double)delay.tv_sec  )*( 1000000 ));
-		printf("%lu\n%lu",delay.tv_sec,delay.tv_usec);
 	}
 	else
 	{
@@ -104,7 +103,7 @@ sigprocmask(SIG_BLOCK,&intmask,NULL);//this blocks the signal, so that the inter
 		delay.tv_usec = 0;
 	}
 /*file parsing to obtain final bytes*/
-	success_new = fileParser(datafilename,NEW);
+	success_new = FileParser(datafilename,NEW);
 
 /*checks whether the first time's delay flag is up*/
 	if (first_delay == 1)
@@ -122,7 +121,7 @@ sigprocmask(SIG_BLOCK,&intmask,NULL);//this blocks the signal, so that the inter
 	{
 		printf("Error in extracting new dataset\n");
 
-		free_memory2(interface_names,old_bytes_in,old_bytes_out,new_bytes_in,new_bytes_out);
+		FreeMemory2(interface_names,old_bytes_in,old_bytes_out,new_bytes_in,new_bytes_out);
 		continue;
 	}
 
@@ -131,13 +130,13 @@ sigprocmask(SIG_BLOCK,&intmask,NULL);//this blocks the signal, so that the inter
 /*file manipulation for each interface recorded*/
 	for (int i = 0; i < interfaces; i++)
 	{
-		save_bandwidth(i,IN);
-		save_bandwidth(i,OUT);
-		append_log(i);
+		SaveBandwidth(i,IN);
+		SaveBandwidth(i,OUT);
+		AppendLog(i);
 	}
 sigprocmask(SIG_UNBLOCK,&intmask,NULL);
 }
 while(1);
-	free_memory2(interface_names,old_bytes_in,old_bytes_out,new_bytes_in,new_bytes_out);
+	FreeMemory2(interface_names,old_bytes_in,old_bytes_out,new_bytes_in,new_bytes_out);
 	return 0;
 }

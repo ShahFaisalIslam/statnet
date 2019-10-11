@@ -17,8 +17,13 @@
 #define OUT 5
 
 
+void InterruptHandler(int signum)
+{
+        FreeMemory2(interface_names,old_bytes_in,old_bytes_out,new_bytes_in,new_bytes_out);
+	exit(1);
+}
 
-void append_log(const int i)
+void AppendLog(const int i)
 {
 	/*Declaration of variables*/
 	FILE *log_pointer;
@@ -56,7 +61,7 @@ void append_log(const int i)
 
 
 
-void save_bandwidth(const int i,const int type)
+void SaveBandwidth(const int i,const int type)
 {
 	int success_store;
 	char *filename;
@@ -66,13 +71,13 @@ void save_bandwidth(const int i,const int type)
 	if (type == OUT)
 	{
 		strcpy(inout,"outgoing");
-		kbps_out = kb_per_second(old_bytes_out[i],new_bytes_out[i],&beginning,&ending);
+		kbps_out = Bandwidth(old_bytes_out[i],new_bytes_out[i],&beginning,&ending);
 		kbps=&kbps_out;
 	}
 	else
 	{
 		strcpy(inout,"incoming");
-		kbps_in = kb_per_second(old_bytes_in[i],new_bytes_in[i],&beginning,&ending);
+		kbps_in = Bandwidth(old_bytes_in[i],new_bytes_in[i],&beginning,&ending);
 		kbps=&kbps_in;
 	}
 
@@ -80,13 +85,13 @@ void save_bandwidth(const int i,const int type)
 	FILE *file;
 
 
-	filename =setfilename(interface_names[i],type);
+	filename =SetFileName(interface_names[i],type);
 	if(filename == NULL)
 	{
 		printf("Error in creating %s bandwidth file\n",inout);
 
 		free(filename);
-		free_memory2(interface_names,old_bytes_in,old_bytes_out,new_bytes_in,new_bytes_out);
+		FreeMemory2(interface_names,old_bytes_in,old_bytes_out,new_bytes_in,new_bytes_out);
 		return;
 	}
 
@@ -98,7 +103,7 @@ void save_bandwidth(const int i,const int type)
 
 		fclose(file);
 		free(filename);
-		free_memory2(interface_names,old_bytes_in,old_bytes_out,new_bytes_in,new_bytes_out);
+		FreeMemory2(interface_names,old_bytes_in,old_bytes_out,new_bytes_in,new_bytes_out);
 		return;
 	}
 
@@ -110,7 +115,7 @@ void save_bandwidth(const int i,const int type)
 
 		fclose(file);
 		free(filename);
-		free_memory2(interface_names,old_bytes_in,old_bytes_out,new_bytes_in,new_bytes_out);
+		FreeMemory2(interface_names,old_bytes_in,old_bytes_out,new_bytes_in,new_bytes_out);
 		return;
 
 	}
@@ -120,13 +125,17 @@ void save_bandwidth(const int i,const int type)
 }
 
 
-double kb_per_second(const unsigned long old_bytes,const unsigned long new_bytes,struct timeval *beginning,struct timeval*ending)
+double Bandwidth(const unsigned long old_bytes,const unsigned long new_bytes,struct timeval *beginning,struct timeval*ending)
 {
 	unsigned long bytes_difference = new_bytes - old_bytes;
+//	printf("%lu",bytes_difference);
 	int seconds = ending->tv_sec - beginning->tv_sec;
 	double time = (double)(seconds) + (ending->tv_usec - beginning->tv_usec)/((double)1e6);
+//	printf("\t%.2f\n",time);
+
 	double rate = (double)bytes_difference/time;
 	rate /= 1024; //conversion to kilobytes/second
+//	printf("%.2f",rate);
 	return rate; //returning the success
 
 }
@@ -135,7 +144,7 @@ double kb_per_second(const unsigned long old_bytes,const unsigned long new_bytes
 
 
 
-char *setfilename(char *interface_name,const int type)
+char *SetFileName(char *interface_name,const int type)
 {
 
 	char directory[] ="/tmp/";
@@ -163,7 +172,7 @@ char *setfilename(char *interface_name,const int type)
 
 
 
-void free_memory(unsigned long *in,unsigned long *out,FILE *fp)
+void FreeMemory(unsigned long *in,unsigned long *out,FILE *fp)
 {
 	if (fp != NULL)
 	{
@@ -175,7 +184,7 @@ void free_memory(unsigned long *in,unsigned long *out,FILE *fp)
 
 
 
-void free_memory2(char **a,unsigned long *b,unsigned long *c,unsigned long *d,unsigned long *e)
+void FreeMemory2(char **a,unsigned long *b,unsigned long *c,unsigned long *d,unsigned long *e)
 {
 	for (int i = 0; i < interfaces; i++)
 		free(a[i]);
@@ -191,7 +200,7 @@ void free_memory2(char **a,unsigned long *b,unsigned long *c,unsigned long *d,un
 
 
 
-int fileParser(const char *file,const int set)
+int FileParser(const char *file,const int set)
 {
 	FILE *filepointer;
 
@@ -241,7 +250,7 @@ int fileParser(const char *file,const int set)
 		{
 			printf("Error: Internal buffer not deactivated, which prevents filestream to buffer properly.\n");
 
-			free_memory(bytes_in,bytes_out,NULL);
+			FreeMemory(bytes_in,bytes_out,NULL);
 			return FAILURE;
 		}
 
@@ -264,7 +273,7 @@ int fileParser(const char *file,const int set)
 				{
 					printf("Error in adding interface name: not allocating space for name\n");
 
-					free_memory(bytes_in,bytes_out,filepointer);
+					FreeMemory(bytes_in,bytes_out,filepointer);
 					return FAILURE;
 
 				}
@@ -274,7 +283,7 @@ int fileParser(const char *file,const int set)
 				{
 					printf("Error in adding interface name: not allocating space for name characters\n");
 
-					free_memory(bytes_in,bytes_out,filepointer);
+					FreeMemory(bytes_in,bytes_out,filepointer);
 					return FAILURE;
 
 				}
@@ -295,7 +304,7 @@ int fileParser(const char *file,const int set)
 				{
 					printf("Error in adding interface name: not saved\n");
 
-					free_memory(bytes_in,bytes_out,filepointer);
+					FreeMemory(bytes_in,bytes_out,filepointer);
 					return FAILURE;
 				}
 
@@ -304,7 +313,7 @@ int fileParser(const char *file,const int set)
 				{
 					printf("Error in adding interface name: memory not optimized\n");
 
-					free_memory(bytes_in,bytes_out,filepointer);
+					FreeMemory(bytes_in,bytes_out,filepointer);
 					return FAILURE;
 
 				}
@@ -313,7 +322,7 @@ int fileParser(const char *file,const int set)
 			{
 				printf("Error in obtaining interface name\n");
 
-				free_memory(bytes_in,bytes_out,filepointer);
+				FreeMemory(bytes_in,bytes_out,filepointer);
 				return FAILURE;
 			}
 //---------------------------------------name obtained------------------------------------//
@@ -328,7 +337,7 @@ int fileParser(const char *file,const int set)
 			{
 				printf("Error in adding bytes in: not allocating space for bytes\n");
 
-				free_memory(bytes_in,bytes_out,filepointer);
+				FreeMemory(bytes_in,bytes_out,filepointer);
 				return FAILURE;
 
 			}
@@ -339,7 +348,7 @@ int fileParser(const char *file,const int set)
 			{
 				printf("Error in adding bytes out: not allocating space for bytes\n");
 
-				free_memory(bytes_in,bytes_out,filepointer);
+				FreeMemory(bytes_in,bytes_out,filepointer);
 				return FAILURE;
 
 			}
@@ -351,7 +360,7 @@ int fileParser(const char *file,const int set)
 			{
 				printf("Error in obtaining in_bytes");
 
-				free_memory(bytes_in,bytes_out,filepointer);
+				FreeMemory(bytes_in,bytes_out,filepointer);
 				return FAILURE;
 
 			}
@@ -367,7 +376,7 @@ int fileParser(const char *file,const int set)
 			{
 				printf("Error in obtaining out_bytes");
 
-				free_memory(bytes_in,bytes_out,filepointer);
+				FreeMemory(bytes_in,bytes_out,filepointer);
 				return FAILURE;
 
 			}
@@ -406,7 +415,7 @@ int fileParser(const char *file,const int set)
 //-------------------------------------------data obtained--------------------//
 
 
-		free_memory(bytes_in,bytes_out,NULL);
+		FreeMemory(bytes_in,bytes_out,NULL);
 
 		return SUCCESS;
 	}
