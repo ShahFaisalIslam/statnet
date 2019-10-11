@@ -20,7 +20,8 @@ extern unsigned long *old_bytes_out; //storing bytes out for first time
 extern unsigned long *new_bytes_in;//storing the bytes in for second time
 extern unsigned long *new_bytes_out;//storing the bytes out for second time
 
-
+extern double kbps_in;		//declared as such in order to append this data to the log file
+extern double kbps_out;		//declared as such in order to append this data to the log file
 
 //functions:
 double kb_per_second(const unsigned long old_bytes,const unsigned long new_bytes,struct timeval *beginning,struct timeval*ending);
@@ -29,6 +30,6 @@ void free_memory(unsigned long *in,unsigned long *out,FILE *fp);
 void free_memory2(char **a,unsigned long *b,unsigned long *c,unsigned long *d,unsigned long *e);
 int fileParser(const char *file,const int set);
 void interrupt_detector(int signum);
-
-
+void save_bandwidth(const int i,const int type);
+void append_log(const int i);
 #endif

@@ -40,11 +40,8 @@ unsigned long *new_bytes_out;//storing the bytes out for second time
 
 int first_delay;//this will keep file parsing different for the first time
 
-
-
-
-void save_bandwidth(int i,int type);
-
+double kbps_in;//just declaring here
+double kbps_out;//just declaring here
 
 
 int main(int argc,char *argv[])
@@ -132,171 +129,13 @@ sigprocmask(SIG_BLOCK,&intmask,NULL);//this blocks the signal, so that the inter
 /*file manipulation for each interface recorded*/
 	for (int i = 0; i < interfaces; i++)
 	{
-		int success_store;//stores success in storing file
-
-	/*setting filename for incoming bandwidth storage file*/
-		infilename = setfilename(interface_names[i],IN);
-
-	/*error reporting if failure in setting the name*/
-		if(infilename == NULL)
-		{
-			printf("Error in creating incoming bandwidth file\n");
-
-			free(infilename);
-			free_memory2(interface_names,old_bytes_in,old_bytes_out,new_bytes_in,new_bytes_out);
-			continue;
-		}
-	/*storing data on success in setting the name*/
-
-	/*opening the file in overwrite mode*/
-		infile=fopen(infilename,"w");
-	/*error reporting on failure to open the file*/
-		if(infile == NULL)
-		{
-			printf("Error in opening incoming bandwidth file\n");
-
-			fclose(infile);
-			free(infilename);
-			free_memory2(interface_names,old_bytes_in,old_bytes_out,new_bytes_in,new_bytes_out);
-			continue;
-		}
-
-	/*calcuating  incoming bandwidth*/
-		kbps = kb_per_second(old_bytes_in[i],new_bytes_in[i],&beginning,&ending);
-	/*storing incoming bandwidth*/
-		success_store=fprintf(infile,"%.2f",kbps);
-	/*error reporting on failure to store data in file*/
-		if (success_store == 0)
-		{
-			printf("Error in storing data within incoming bandwidth file\n");
-
-			fclose(infile);
-			free(infilename);
-			free_memory2(interface_names,old_bytes_in,old_bytes_out,new_bytes_in,new_bytes_out);
-			continue;
-
-		}
-
-		free(infilename);
-		fclose(infile);
-
-
-	/*setting name for outgoing bandwidth file*/
-		outfilename= setfilename(interface_names[i],OUT);
-	/*error reporting on failure to set the filename*/
-		if(outfilename == NULL)
-		{
-			printf("Error in creating outgoing bandwidth file\n");
-
-			free(outfilename);
-			free_memory2(interface_names,old_bytes_in,old_bytes_out,new_bytes_in,new_bytes_out);
-
-			continue;
-
-		}
-
-
-	/*opening file in overwrite mode*/
-		outfile=fopen(outfilename,"w");
-	/*error reporting on failure to open the file*/
-		if(infile == NULL)
-		{
-			printf("Error in opening outgoing bandwidth file\n");
-
-			fclose(outfile);
-			free(outfilename);
-			free_memory2(interface_names,old_bytes_in,old_bytes_out,new_bytes_in,new_bytes_out);
-			continue;
-		}
-	/*calculating outgoing bandwidth*/
-		kbps = kb_per_second(old_bytes_out[i],new_bytes_out[i],&beginning,&ending);
-	/*storing the bandwidth in the file*/
-		success_store = fprintf(outfile,"%.2f",kbps);
-	/*error reporting on failure to save the data in the file*/
-		if (success_store == 0)
-		{
-			printf("Error in storing data within outgoing bandwidth file\n");
-
-			fclose(outfile);
-			free(outfilename);
-			free_memory2(interface_names,old_bytes_in,old_bytes_out,new_bytes_in,new_bytes_out);
-			continue;
-
-		}
-
-
-		free(outfilename);
-		fclose(outfile);
-
-
+		save_bandwidth(i,IN);
+		save_bandwidth(i,OUT);
+		append_log(i);
 	}
 sigprocmask(SIG_UNBLOCK,&intmask,NULL);
 }
 while(1);
 	free_memory2(interface_names,old_bytes_in,old_bytes_out,new_bytes_in,new_bytes_out);
 	return 0;
-}
-
-
-void save_bandwidth(int i,int type)
-{
-	int success_store;
-	char *filename;
-	double kbps;
-
-	char inout[9];
-	if (type == OUT)
-	{
-		strcpy(inout,"outgoing");
-		kbps = kb_per_second(old_bytes_out[i],new_bytes_out[i],&beginning,&ending);
-
-	}
-	else
-	{
-		strcpy(inout,"incoming");
-		kbps = kb_per_second(old_bytes_in[i],new_bytes_in[i],&beginning,&ending);
-
-	}
-
-
-	FILE *file;
-
-
-	filename =setfilename(interface_names[i],type);
-	if(filename == NULL)
-	{
-		printf("Error in creating %s bandwidth file\n",inout);
-
-		free(filename);
-		free_memory2(interface_names,old_bytes_in,old_bytes_out,new_bytes_in,new_bytes_out);
-		return;
-	}
-
-	file = fopen(filename,"w");
-	if(file == NULL)
-	{
-		printf("Error in opening %s bandwidth file\n",inout);
-
-
-		fclose(file);
-		free(filename);
-		free_memory2(interface_names,old_bytes_in,old_bytes_out,new_bytes_in,new_bytes_out);
-		return;
-	}
-
-
-	success_store = fprintf(file,"%.2f",kbps);
-	if (success_store == 0)
-	{
-		printf("Error in storing data within %s bandwidth file\n",inout);
-
-		fclose(file);
-		free(filename);
-		free_memory2(interface_names,old_bytes_in,old_bytes_out,new_bytes_in,new_bytes_out);
-		return;
-
-	}
-
-	free(filename);
-	fclose(file);
 }

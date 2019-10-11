@@ -3,11 +3,9 @@
 #include <string.h>
 #include <sys/time.h>
 #include <unistd.h>
-#include <time.h>
 
-#include "statnet.h"
 
-#define BUFF_SIZE 300
+#define BUFF_SIZE 600
 #define SUCCESS 1
 #define FAILURE 0
 #define NAME_LENGTH 31
@@ -17,107 +15,22 @@
 #define OUT 5
 
 
-
-void append_log(const int i)
-{
-	/*Declaration of variables*/
-	FILE *log_pointer;
-
-	char log_name[18];
-	char cur_time[9];
-
-	time_t raw_time;
-	struct tm *obtained_time;
+extern struct timeval beginning,ending;//for updating times
 
 
-	/*Filename creation*/
-	time(&raw_time);
-	obtained_time = localtime(&raw_time);
-	strftime(log_name,sizeof(log_name),"/etc/%Y%m%d.log",obtained_time);
+extern int interfaces;
+extern char **interface_names;//dynamically stores name of interface
+
+
+extern unsigned long *old_bytes_in; //storing bytes in for first time
+extern unsigned long *old_bytes_out; //storing bytes out for first time
+
+
+extern unsigned long *new_bytes_in;//storing the bytes in for second time
+extern unsigned long *new_bytes_out;//storing the bytes out for second time
 
 
 
-	/*Opening file*/
-	if ( (   log_pointer=fopen(   log_name,"a"   )  ) != NULL )
-	{
-		time(&raw_time);
-		obtained_time = localtime(&raw_time);
-		strftime(cur_time,sizeof(cur_time),"%X",obtained_time);
-
-		fprintf(log_pointer,"%s,%s,%.2f,%.2f\n",cur_time,interface_names[i],kbps_in,kbps_out);
-
-		fclose(log_pointer);
-		log_pointer = NULL;
-	}
-
-}
-
-
-
-
-
-void save_bandwidth(const int i,const int type)
-{
-	int success_store;
-	char *filename;
-	double *kbps;
-
-	char inout[9];
-	if (type == OUT)
-	{
-		strcpy(inout,"outgoing");
-		kbps_out = kb_per_second(old_bytes_out[i],new_bytes_out[i],&beginning,&ending);
-		kbps=&kbps_out;
-	}
-	else
-	{
-		strcpy(inout,"incoming");
-		kbps_in = kb_per_second(old_bytes_in[i],new_bytes_in[i],&beginning,&ending);
-		kbps=&kbps_in;
-	}
-
-
-	FILE *file;
-
-
-	filename =setfilename(interface_names[i],type);
-	if(filename == NULL)
-	{
-		printf("Error in creating %s bandwidth file\n",inout);
-
-		free(filename);
-		free_memory2(interface_names,old_bytes_in,old_bytes_out,new_bytes_in,new_bytes_out);
-		return;
-	}
-
-	file = fopen(filename,"w");
-	if(file == NULL)
-	{
-		printf("Error in opening %s bandwidth file\n",inout);
-
-
-		fclose(file);
-		free(filename);
-		free_memory2(interface_names,old_bytes_in,old_bytes_out,new_bytes_in,new_bytes_out);
-		return;
-	}
-
-
-	success_store = fprintf(file,"%.2f",*kbps);
-	if (success_store == 0)
-	{
-		printf("Error in storing data within %s bandwidth file\n",inout);
-
-		fclose(file);
-		free(filename);
-		free_memory2(interface_names,old_bytes_in,old_bytes_out,new_bytes_in,new_bytes_out);
-		return;
-
-	}
-
-	free(filename);
-	fclose(file);
-}
 
 
 double kb_per_second(const unsigned long old_bytes,const unsigned long new_bytes,struct timeval *beginning,struct timeval*ending)
@@ -135,10 +48,9 @@ double kb_per_second(const unsigned long old_bytes,const unsigned long new_bytes
 
 
 
-char *setfilename(char *interface_name,const int type)
+char *setfilename(char *interface_name,int type)
 {
 
-	char directory[] ="/tmp/";
         char appended[5];
         if(type == IN)
                 strcpy(appended,"_in");
@@ -148,11 +60,10 @@ char *setfilename(char *interface_name,const int type)
         char *filename;//points to the created filename
 
         int  filesize;//stores calculated filesize
-        filesize =strlen(directory)+strlen(interface_name)+strlen(appended)+1;
+        filesize =strlen(interface_name)+strlen(appended)+1;
 
-        filename=calloc(filesize,sizeof(char));//<directory><interface name><appended>\0
-	filename=strdup(directory);//adding directory to filename
-        filename=strcat(filename,interface_name);//appending interface's name
+        filename=calloc(filesize,sizeof(char));//<interface name><appended>\0
+        filename=strdup(interface_name);//duplicating name
         filename=strcat(filename,appended);//appending the in/out type
 
         return filename;
@@ -191,9 +102,8 @@ void free_memory2(char **a,unsigned long *b,unsigned long *c,unsigned long *d,un
 
 
 
-int fileParser(const char *file,const int set)
+int fileParser(FILE *filepointer,char *file,int set)
 {
-	FILE *filepointer;
 
 	unsigned long *bytes_in;
 	unsigned long *bytes_out;
@@ -205,23 +115,7 @@ int fileParser(const char *file,const int set)
 
 
 	filepointer = fopen(file,"r");
-	if (set == OLD)
-	{
-		if (first_delay == 1)
-			gettimeofday(&beginning,NULL);
-		else
-		{
-			beginning.tv_sec=ending.tv_sec;
-			beginning.tv_usec=ending.tv_usec;
-		}
-	}
-	else if (set == NEW)
-		gettimeofday(&ending,NULL);
-	else
-		{
-			printf("Invalid set\n");
-			return FAILURE;
-		}
+
 
 
 	//to reallcc these variables later on
@@ -249,11 +143,13 @@ int fileParser(const char *file,const int set)
 		while (fgets(buffer,BUFF_SIZE,filepointer) != NULL)
 		{
 			printf("\r");
+
 			if (lines < 2)//to ignore first two lines of the file
 			{
 				lines++;
 				continue;
 			}
+
 //----------------------------obtaining name----------------------------------//
 			name = strtok(buffer,":");
 //			printf("%s",name);
@@ -383,6 +279,8 @@ int fileParser(const char *file,const int set)
 
 		if(set == OLD)//interfaces-1 is due to the loop above adding interf
 		{
+			gettimeofday(&beginning,NULL);//to get time for the beginning
+
 			old_bytes_in = realloc(old_bytes_in,(sizeof(unsigned long))*(interfaces));
 			old_bytes_out = realloc(old_bytes_out,(sizeof(unsigned long))*(interfaces));
 			for(int i = 0;i < interfaces;i++)
@@ -393,6 +291,8 @@ int fileParser(const char *file,const int set)
 		}
 		if(set == NEW)
 		{
+			gettimeofday(&ending,NULL);
+
 			new_bytes_in = realloc(new_bytes_in,(sizeof(unsigned long))*(interfaces));
 			new_bytes_out = realloc(new_bytes_out,(sizeof(unsigned long))*(interfaces));
 
